@@ -98,49 +98,6 @@ docal = function(x_, fun_, ...) {
 
 }
 
-#' Generic `+` operator
-#'
-#' This is a generic implementation of the `+` operator.
-#'
-#' @param e1 The first operand.
-#' @param e2 The second operand.
-#'
-#' @export
-`+` = function(e1, e2) {
-  UseMethod("+")
-}
-
-#' Default `+` method
-#'
-#' Falls back to the base implementation of the `+` operator.
-#'
-#' @param e1 The first operand.
-#' @param e2The second operand.
-#'
-#' @return The sum of `e1` and `e2`.
-#'
-#' @export
-#'
-#' @method + default
-`+.default` = function(e1, e2) {
-  base::`+`(e1, e2)
-}
-
-#' `+` method for character
-#'
-#' Concatenates two character strings.
-#'
-#' @param e1 A character string.
-#' @param e2 Another character string.
-#'
-#' @return A concatenated character string.
-#'
-#' @export
-#'
-#' @method + character
-`+.character` = function(e1, e2) {
-  str_c(e1, e2)
-}
 
 #' findGit
 #'
@@ -165,7 +122,7 @@ findGit = function() {
 #' @importFrom pkgload is_dev_package
 #'
 #' @export
-fileWhenTest = function(file_, project_ = 'pythonicR') {
+fileWhenTest = function(file_, project_ = 'bioScript') {
 
   if (is_dev_package(project_)) {
     filename_ = file.path(findGit(), 'inst/extdata', file_)
