@@ -4,7 +4,7 @@
 \alias{fileWhenTest}
 \title{fileWhenTest}
 \usage{
-fileWhenTest(file_, project_ = "pythonicR")
+fileWhenTest(file_, project_ = "bioScript")
 }
 \description{
 fileWhenTest

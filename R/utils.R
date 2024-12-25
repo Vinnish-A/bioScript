@@ -86,15 +86,26 @@ vec2copy = function(vec_) {
 
 }
 
-#' docal
+#' calDo
 #'
 #' @export
-docal = function(x_, fun_, ...) {
+calDo = function(x_, fun_, ...) {
 
   params_ = lapply(as.list(match.call())[-c(1:3)], \(x__) eval(x__, envir = x_))
   res_ = do.call(fun_, params_)
 
   return(res_)
+
+}
+
+#' calWith
+#'
+#' @export
+calWith = function(x_, expr_, ...) {
+
+  expr_ = substitute(expr_)
+
+  withIn(expr_, list2env(x_), ...)
 
 }
 

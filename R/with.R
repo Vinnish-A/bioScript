@@ -1,5 +1,8 @@
 
-#' with
+# with --------------------------------------------------------------------
+
+
+#' with function cluster
 #'
 #' @description
 #' Similar to function decorators, but more flexible, the advantages are:
@@ -16,10 +19,25 @@
 #' @export
 withIn = function(expr, env = parent.frame(), ...) {
 
-  lst_param = list(...)
-  env_param = list2env(lst_param, parent = env)
+  permission = tolower(getOption('allowWith'))
+  if (length(permission) == 0) permission = 'enable'
 
-  invisible(eval(expr, envir = env_param))
+  if (permission == 'enable') {
+
+    lst_param = list(...)
+    env_param = list2env(lst_param, parent = env)
+
+    invisible(eval(expr, envir = env_param))
+
+  } else if (permission == 'disable') {
+
+    invisible()
+
+  } else {
+
+    stop('Check `allowWith` option! ')
+
+  }
 
 }
 
@@ -204,6 +222,21 @@ withAssume = function(expr, onPass = 'Success', onError = 'Error', env = parent.
       stop()
     }
   )
+
+}
+
+withOption = function(expr, options, env = parent.frame(), ...) {
+
+  expr = substitute(expr)
+
+  options_raw = setNames(lapply(names(options), getOption), names(options))
+  do.call(base::options, options)
+  on.exit(do.call(base::options, options_raw))
+
+  lst_param = list(...)
+  env_param = list2env(lst_param, parent = env)
+
+  invisible(eval(expr, envir = env_param))
 
 }
 

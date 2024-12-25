@@ -2,7 +2,7 @@
 % Please edit documentation in R/with.R
 \name{withIn}
 \alias{withIn}
-\title{with}
+\title{with function cluster}
 \usage{
 withIn(expr, env = parent.frame(), ...)
 }
