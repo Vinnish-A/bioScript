@@ -43,6 +43,7 @@ capitalize = function(sentence_) {
 #'
 #' @param keyWord_
 #' @param path_
+#' @param pattern_
 #'
 #' @importFrom purrr map walk
 #' @importFrom cli cli_text

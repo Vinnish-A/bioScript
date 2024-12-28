@@ -4,7 +4,7 @@
 \alias{buildAllContent}
 \title{buildAllContent}
 \usage{
-buildAllContent(selected_, filename_, checkType_ = "strict")
+buildAllContent(selected_, filename_)
 }
 \arguments{
 \item{selected_}{part designated to source.}

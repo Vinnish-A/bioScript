@@ -80,40 +80,29 @@ bodyOf = function(vec_, rule_) {
 #' @param rule_ rule.
 #'
 #' @keywords internal
-checkFormat = function(vec_, rule_, checkType_) {
+checkFormat = function(vec_, rule_) {
 
   titles_ = vec_[sapply(vec_, rule_)]
 
   if (length(titles_) == 0) stop('No title row matches the `rule`. ')
 
-  if (checkType_ == 'strict') {
+  # 1. 检查是否符合rule
+  # 2. 检查是否存在一级标题
+  # 3. 检查同一级内的同级标题
+  # 4. 检查是否存在越级标题
 
-    # 1. 检查是否符合rule
-    # 2. 检查是否存在一级标题
-    # 3. 检查同一级内的同级标题
-    # 4. 检查是否存在越级标题
+  len_ = c()
+  for (i_ in seq_along(titles_)) {
 
-    len_ = c()
-    for (i_ in seq_along(titles_)) {
-
-      if (i_ == 1) {
-        headN_ = str_count(titles_[[1]], '#')
-        if (headN_ != 1) stop('File doesn\' t start with a level one heading.')
-        len_[[1]] = headN_
-      } else {
-        len_[[i_]] = str_count(titles_[[i_]], '#')
-        con1_ = len_[[i_]] - len_[[i_-1]] > 1
-        if (con1_) stop('Title Overleveling, which:\n', titles_[[i_]])
-      }
-
+    if (i_ == 1) {
+      headN_ = str_count(titles_[[1]], '#')
+      if (headN_ != 1) stop('File doesn\' t start with a level one heading.')
+      len_[[1]] = headN_
+    } else {
+      len_[[i_]] = str_count(titles_[[i_]], '#')
+      con1_ = len_[[i_]] - len_[[i_-1]] > 1
+      if (con1_) stop('Title Overleveling, which:\n', titles_[[i_]])
     }
-
-  } else if (checkType_ == 'lenient') {
-
-    # 1. 检查是否符合rule
-    # 2. 检查是否存在一级标题
-    # 3. 检查同一级内的同级标题
-
 
   }
 
@@ -131,7 +120,7 @@ checkFormat = function(vec_, rule_, checkType_) {
 #' @return Builded nested list containing codes' head and body.
 #'
 #' @keywords internal
-buildFile = function(filename_, rule_ = NULL, checkType_ = 'strict') {
+buildFile = function(filename_, rule_ = NULL) {
 
   if (is.null(rule_)) rule_ = .rule
 
@@ -139,7 +128,7 @@ buildFile = function(filename_, rule_ = NULL, checkType_ = 'strict') {
 
   vec_ = vec_[!str_detect(vec_, '^\\s*$')]
 
-  withAssume(checkFormat(vec_, rule_, checkType_), 'Format check passed! ', 'Format check failed...')
+  withAssume(checkFormat(vec_, rule_), 'Format check passed! ', 'Format check failed...')
 
   return(bodyOf(vec_, rule_)[[1]])
 
@@ -199,6 +188,20 @@ findWhere = function(lst_, selected_) {
 
 }
 
+parseSelected = function(...) {
+
+  selected_ = unlist(list(...))
+
+  if (length(selected_) == 1 & str_detect(selected_, '/')) {
+
+    selected_ = str_split(selected_, '/')[[1]]
+
+  }
+
+  return(selected_)
+
+}
+
 #' bulidContent
 #'
 #' @description
@@ -211,9 +214,9 @@ findWhere = function(lst_, selected_) {
 #' @return content
 #'
 #' @export
-buildContent = function(selected_, filename_, root_ = F, checkType_ = 'strict') {
+buildContent = function(selected_, filename_, root_ = F) {
 
-  builded_ = buildFile(filename_, checkType_ = checkType_)
+  builded_ = buildFile(filename_)
 
   lst_ = builded_
   path_ = c()
@@ -271,6 +274,52 @@ moveHead = function(lst_) {
 
 }
 
+#' headerWrapper
+#'
+#' @noRd
+#'
+#' @keywords internal
+headerWrapper = function(headerName_, headerLevel_) {
+
+  paste(
+    paste(rep('#', headerLevel_), collapse = ''),
+    headerName_,
+    paste(rep('-', 4), collapse = '')
+  )
+
+}
+
+#' weave
+#'
+#' @noRd
+#'
+#' @keywords internal
+weave = function(builded_, headerName_ = 'head', headerLevel_ = 1) {
+
+  res_ = c()
+  for (name_ in names(builded_)) {
+
+    if (name_ == 'head') {
+
+      res_ = c(res_, headerWrapper(headerName_, headerLevel_), builded_[[name_]])
+
+    } else {
+
+      headerLevelNew_ = headerLevel_ + 1
+      if (is.list(builded_[[name_]])) {
+        res_ = c(res_, weave(builded_[[name_]], name_, headerLevelNew_))
+      } else {
+        res_ = c(res_, headerWrapper(name_, headerLevelNew_), builded_[[name_]])
+      }
+
+    }
+
+  }
+
+  return(res_)
+
+}
+
 #' buildAllContent
 #'
 #' @description
@@ -282,9 +331,9 @@ moveHead = function(lst_) {
 #' @return content
 #'
 #' @export
-buildAllContent = function(selected_, filename_, checkType_ = 'strict') {
+buildAllContent = function(selected_, filename_) {
 
-  builded_ = moveHead(buildFile(filename_, checkType_ = checkType_))
+  builded_ = moveHead(buildFile(filename_))
 
   where_ = findWhere(builded_, selected_)
 
@@ -296,12 +345,11 @@ buildAllContent = function(selected_, filename_, checkType_ = 'strict') {
     heads_ = append(heads_, lst_[['head']] |> paste0(collapse = '\n'))
     lst_ = lst_[[ele_]]
   }
-  head_ = paste0(heads_, collapse = '\n')
 
-  text_ = Reduce(function(x__, idx__) x__[[idx__]], where_, init = builded_) |>
-    unlist() |> paste0(collapse = '\n')
+  texts_ = Reduce(function(x__, idx__) x__[[idx__]], where_, init = builded_)
+  texts_$head = c(heads_, texts_$head)
 
-  content_ = paste(head_, text_, sep = '\n')
+  content_ = paste0(weave(texts_), collapse = '\n')
 
   return(content_)
 
@@ -318,11 +366,11 @@ buildAllContent = function(selected_, filename_, checkType_ = 'strict') {
 #' @return Null
 #'
 #' @export
-runThis = function(..., filename_ = rstudioapi::getSourceEditorContext()$path, checkType_ = 'lenient') {
+runThis = function(..., filename_ = rstudioapi::getSourceEditorContext()$path) {
 
-  selected_ = unlist(list(...))
+  selected_ = parseSelected(...)
 
-  content_ = buildContent(selected_, filename_, F, checkType_)
+  content_ = buildContent(selected_, filename_, F)
 
   file_ = paste0(tempfile(), '.R')
   cat(content_, file = file_)
@@ -346,7 +394,7 @@ runThis = function(..., filename_ = rstudioapi::getSourceEditorContext()$path, c
 #' @export
 prepareThis = function(..., filename_ = rstudioapi::getSourceEditorContext()$path) {
 
-  selected_ = unlist(list(...))
+  selected_ = parseSelected(...)
 
   content_ = buildContent(selected_, filename_, T)
 
@@ -372,7 +420,7 @@ prepareThis = function(..., filename_ = rstudioapi::getSourceEditorContext()$pat
 #' @export
 runThese = function(..., filename_ = rstudioapi::getSourceEditorContext()$path) {
 
-  selected_ = unlist(list(...))
+  selected_ = parseSelected(...)
 
   content_ = buildAllContent(selected_, filename_)
 

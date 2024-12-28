@@ -4,7 +4,7 @@
 \alias{checkFormat}
 \title{checkFormat}
 \usage{
-checkFormat(vec_, rule_, checkType_)
+checkFormat(vec_, rule_)
 }
 \arguments{
 \item{vec_}{File readed as vectors.}

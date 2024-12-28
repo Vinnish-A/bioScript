@@ -4,7 +4,7 @@
 \alias{buildFile}
 \title{buildFile}
 \usage{
-buildFile(filename_, rule_ = NULL, checkType_ = "strict")
+buildFile(filename_, rule_ = NULL)
 }
 \arguments{
 \item{filename_}{File to source.}

@@ -4,11 +4,7 @@
 \alias{runThis}
 \title{runThis}
 \usage{
-runThis(
-  ...,
-  filename_ = rstudioapi::getSourceEditorContext()$path,
-  checkType_ = "lenient"
-)
+runThis(..., filename_ = rstudioapi::getSourceEditorContext()$path)
 }
 \arguments{
 \item{...}{part designated to source}

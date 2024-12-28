@@ -209,7 +209,7 @@ withAssume = function(expr, onPass = 'Success', onError = 'Error', env = parent.
     if (exit_status == onPass) {
       coloredCat(exit_status, '\n')
     } else {
-      coloredCat(exit_status + ', message: \n' + message, '\n')
+      coloredCat(paste0(exit_status, ', message: \n', message), '\n')
     }
   })
 
@@ -225,6 +225,17 @@ withAssume = function(expr, onPass = 'Success', onError = 'Error', env = parent.
 
 }
 
+#' withOption
+#'
+#' @description
+#' First change the options when excuting expression, then change it back.
+#'
+#' @param expr raw expression
+#' @param options a list. options.
+#' @param env caller environment
+#' @param ... Temporary variable
+#'
+#' @export
 withOption = function(expr, options, env = parent.frame(), ...) {
 
   expr = substitute(expr)

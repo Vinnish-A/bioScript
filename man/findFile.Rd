@@ -7,7 +7,7 @@
 findFile(keyWord_, path_ = ".", pattern_ = ".R$")
 }
 \arguments{
-\item{path_}{}
+\item{pattern_}{}
 }
 \description{
 Find the files containing the keywords and print out their paths.
