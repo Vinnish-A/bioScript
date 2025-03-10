@@ -1,0 +1,23 @@
+<style>
+  summary {
+    color: #317eac;  
+  }
+
+  summary:hover {
+    color: #285f77;  
+  }
+
+  .container {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  .right-image {
+    float: right; /* Floats the image to the right of the text */
+    margin-left: 20px; /* Adds space between the text and the image */
+    width: 150px; /* Width of the image */
+    height: auto; /* Maintains aspect ratio */
+    border-radius: 10px; /* Optional: Rounds the corners of the image */
+  }
+</style>

@@ -1,0 +1,334 @@
+---
+title: 使用`bioScript`进行探索性数据分析
+output:
+  html_document:
+    theme: cerulean
+    highlight: tango
+    css: style.css
+---
+
+> 没有银弹
+
+[<img src="pic/badge.png" class="right-image">](https://github.com/Vinnish-A/bioScript)本册/软件包是Vinnish本人的个人经验总结, 旨在规范, 管理数据分析项目中产生的R代码文件, 分属项目`bioFlow`的元编程模块. 其它内容, 如实际生物数据分析中可能需要的简化步骤, 见姊妹软件包`bioTool`. 本册/软件包的目的只在于提供提供应用R进行探索性数据分析方法的某种建议或参考, 包本身也许不能为分析过程带来方便, 真正重要的是理解工作的需求与内容.
+
+如果您有疑问或补充, 请随时提出问题! 本包仓库: [Vinnish-A/bioScript](https://github.com/Vinnish-A/bioScript). 
+
+## 探索性数据分析
+
+就方法而言, 数据分析分为探索性数据分析(Explosive Data Analysis, EDA)与流程性数据分析. 其中EDA在日常与生物数据中最为常用, 重要. 
+
+探索性数据分析与流程性数据分析区别于:
+
+1. EDA的结果未必提前可知; 
+2. EDA的目标随分析进行而改变; 
+
+因此EDA对于分析过程中产生的代码也有自己的要求, 包括: 
+
+1. EDA可能对参数敏感; 
+2. EDA可以复用代码, 但并非以一成不变的模式; 
+
+如单细胞转录组分析中, 尽管分析的流程(pipeline)十分成熟, 但是受到分析目的, 分析精度, 数据规模的影响, 我们仍然要灵活的组织成熟的流程, 形成独特的数据分析项目, 但也需要高效的复用以往成熟的代码. 
+
+这些特点决定了, 脚本不是最适合EDA的模式, 随意的草稿更不可能留存和复现(reproduce). 
+
+## 基于项目的EDA
+
+以下是由个人经验总结的基于项目的EDA方法. 
+
+### 项目文件
+
+将一个包含`.git`存储的文件夹视作一个项目目录, 一个项目内应当包含以下分工明确的子目录:
+
+- `code/R`文件夹用于存储项目过程中的主体代码;
+- `utils`文件夹用于存储成熟的脚本或者尚未编写入库的函数; 
+- `data`文件夹存储项目的原始数据, 参考文件等, 一般不同步也避免更新; 
+- `docs`文件夹包含进展中的文书, 需求, 任务等; 
+- `result`文件夹包含用于汇总的不太大的结果文件, 一般与`code`中文件命名相同; 
+- `tmp`文件夹作为临时文件夹或者存储较大的中间文件, 一般不同步; 
+
+`code`中的代码文件可以日期或命名. 纳入每次交付阶段前的所有结果. 
+
+### 自上而下组织代码
+
+每个阶段都可能面对纵向或是横向的需求, 面对这些需求, 需要理清各个需求之间的层级关系. 这里我们可以参考markdown简约的平展思路, 这要求: 
+
+1. 下级标题可以使用上级标题的变量, 但不可以使用同级或更下级标题的变量; 
+2. 一个上级标题下不允许两个相同的标题; 
+
+围绕这几点, 我们可以构建一个抽象的示例代码. 
+
+<details>
+<summary>**代码结构示例**</summary>
+```
+# 一级标题 ----
+
+# 代码内容
+
+## 二级标题1 ----
+
+# 代码内容
+
+### 三级标题1 ----
+
+# 代码内容
+
+## 二级标题2 ----
+
+# 代码内容
+
+### 三级标题1 ----
+
+# 代码内容
+```
+</details>
+</br>
+
+笔者主要使用rstudio作为r代码编辑的IDE, 本包功能实现部分依赖rstudioapi完成. rstudio中, 使用`Ctrl+Shift+R`添加一级标题, n个`#`后标题后接四个及以上`-`添加n级标题, 右上标识可显示标题结构. 未来, bioScript会添加对Rmd, Qmd等文档的支持, 并添加在vscode, positron中的标题结构预览支持. 需要注意的是, 由于bioScript使用`|`作为分隔符, 标题中不允许出现'|'. 
+
+对于`二级标题1`而言, `一级标题`下的代码内容可以称为`二级标题1`的`头`, `二级标题1`下的代码内容应当仅依赖其头中定义的内容. 同理, `二级标题1`下的`三级标题1`应当仅依赖`二级标题1`与`一级标题`下的代码内容. 在实际的需求下, 一个示例可以为: 
+
+<details>
+<summary>**命名示例**</summary>
+```
+# 20241211 ------
+
+
+library(Seurat)
+library(qs)
+# ...
+
+## Hs ----
+
+seu_hs = qread('xxx')
+# ...
+
+### T ----
+
+### Macrophage ----
+
+## Mm ----
+
+### T ----
+
+### Macrophage ----
+
+```
+</details>
+</br>
+
+### 代码风格 
+
+您可以在许多真正优秀的著作那里得到有关代码风格权威的见解, 这里仅分享个人在项目实践中的一些想法: 
+
+#### 注释
+
+首先需要强调的是注释, 如果没有良好的注释, 写得再清晰, 可读性再好的代码都会令人费解. 以下提及的绝大多数想法都与注释有关. 
+
+#### 函数
+
+函数有助于简化项目中的代码, 但是如果随手写出不可靠的函数, 那么未来想重新利用它可能要花更多时间踩坑排雷. 所以在编写函数之初就应该确认函数是否建议复用. 建议复用的函数包含充分的测试, 可以完成确切的功能. 不建议复用的函数则各有各的缺陷, 如: 
+
+1. 对一个高度可变的对象存在局限的假设, 如假定数据框存在某些列名; 
+2. 函数使用了全局变量; 
+3. 函数功能实现, 接口设置不成熟; 
+
+一个简易的做法是, 以注释的形式, 提前标注标注函数的用途与可用性, 并在一段时间后归档. 
+
+如下是一个用于简单情形下合并两个seurat对象的元信息的函数, 其潜在的假设是df_包含行名. 其实现的功能简单, 但是由于同级标题, 也会被用到多次, 故标注为'disposable'. 标注为'disposable'因为可能需要修改不建议写在代码的头部, 而是与其它变量一样随用随定义. 
+
+<details>
+<summary>**disposable示例**</summary>
+```
+# disposable
+mergePhen = function(df_, phen_ = phen) {
+
+  phen_ |>
+    filter(cell %in% rownames(df_)) |>
+    select(where(~ !all(is.na(.x)))) |>
+    column_to_rownames('cell')
+
+}
+```
+</details>
+</br>
+
+经过抽象后能实现一定功能的实用函数, 但是尚未测试, 潜在使用场景未确定, 或参数不充分的函数可以标注为'unstable'. 这类函数可以定义于代码的头部, 位于包加载的下方. 于下一个工作阶段前在归档在utils中. 
+
+<details>
+<summary>**unstable示例**</summary>
+```
+library(ggplot2)
+
+# 为什么标注为unstable: 
+# 1. 没有根据组数灵活选用检验方法; 
+# 2. 写法未必与包里的其它函数保持一致, 如其他函数会避免使用非标准评估; 
+
+# unstable
+plot_rain = function(dp_, x_, group_, title_) {
+
+  nColor_ = length(unique(dp_[[group_]]))
+  color_ = get_color(nColor_)
+
+  test_ = kruskal.test(dp_[[x_]], dp_[[group_]])
+
+  x_ = sym(x_)
+  group_ = sym(group_)
+
+  p_top_ = dp_ |>
+    ggplot(aes(x = !!x_, color = !!group_, fill = !!group_)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) +
+    theme_classic() +
+    labs(title = title_, subtitle = paste0('Mann-Whitney p = ', signif(test_$p.value, 3))) +
+    xlab(NULL) +
+    ylab(NULL) +
+    theme(legend.position = "none",
+          legend.title = element_blank(),
+          axis.text.x = element_text(size = 12,color = "black"),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.line.y = element_blank(),
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(),
+          plot.title = element_text(hjust = 1),
+          plot.subtitle = element_text(hjust = 1 ),
+          panel.grid.minor = element_blank()) +
+    geom_rug()
+
+  p_bot_ = dp_ |>
+    ggplot(aes(!!group_, !!x_, fill = !!group_)) +
+    geom_boxplot(aes(col = !!group_)) +
+    scale_fill_manual(values = color_) +
+    scale_color_manual(values = color_) +
+    xlab(NULL) +
+    ylab(NULL) +
+    theme_void() +
+    theme(legend.position = "none",
+          legend.title = element_blank(),
+          axis.text.x = element_blank(), #
+          axis.text.y = element_text(size = 11,color = "black"),
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()) +
+    coord_flip()
+
+  dp2_ = ggplot_build(p_bot_)$data[[1]]
+  p_bot_ = p_bot_ + geom_segment(data=dp2_, aes(x=xmin, xend=xmax, y=middle, yend=middle), color="white", inherit.aes = F)
+
+  p_ = p_top_ |> insert_bottom(p_bot_, height = 0.4)
+  p_
+
+}
+```
+</details>
+</br>
+
+成熟的函数, 建议归档到私人或公开库中. 
+
+#### 命名与变量 
+
+在实际场景下, 我们可能面临纵向和横向的多级标题, 对于每一级标题下的数据主体, 采用数据结构或数据建议描述+标题层级简写, 以下划线隔开的命名. 如某一阶段, 我们需要分析人类和小鼠中的T细胞,和巨噬细胞. 我们可以按照如下标题进行分组. 对于人巨噬细胞的seurat对象, 可以命名为`seu_hs_ma`. 
+
+<details>
+<summary>**命名示例**</summary>
+```
+# 20241211 ------
+
+
+library(Seurat)
+library(qs)
+# ...
+
+## Hs ----
+
+seu_hs = qread('xxx')
+# ...
+
+### T ----
+
+### Macrophage ----
+
+## Mm ----
+
+### T ----
+
+### Macrophage ----
+
+```
+</details>
+</br>
+
+对于中间变量, 可以使用与上述相似的命名方式, 但对于一些意义较小的变量, 我们可能不倾向于使用冗长的名字, 但又希望即使销毁这些意义不大但有可能被其它层次使用的变量名. 例如希望等比例减小导出的图片. 这里可以借用表达式性质或with函数隔离全局环境. 
+
+<details>
+<summary>**中间变量示例**</summary>
+```
+# 借用表达式
+{
+    sf = 1.2 # size factor
+    ggsave('path/name.png', p, width = 12/sf, height = 12/sf)
+}
+
+# 借用bioScript的with函数
+withNothing(ggsave('path/name.png', p, width = 12/sf, height = 12/sf), sf = 1.2) # 不执行其它功能
+withPath(ggsave('name.png', p, width = 12/sf, height = 12/sf), 'path', sf = 1.2) # 后置路径
+```
+</details>
+</br>
+
+### bioScript如何帮助施行EDA? 
+
+以下标题层级将作为示例讲述bioScript的功能. 
+
+<details>
+<summary>**层级示例**</summary>
+```
+# 20241211 ------
+
+
+library(Seurat)
+library(qs)
+# ...
+
+## Hs ----
+
+seu_hs = qread('xxx')
+# ...
+
+### T ----
+
+### Macrophage ----
+
+## Mm ----
+
+### T ----
+
+### Macrophage ----
+
+```
+</details>
+</br>
+
+#### 索引, 拆分代码
+
+EDA的任务未必是在一天内完成, 也不意味着我们每次总是需要保存或运行所有层级. 当我们需要浏览或补充某一层级的内容时, 只需要运行所需的层级. 如需得知人T细胞模块, 则依次运行'20241211-Hs-T'下的代码内容. 然而随层级数量增多, 按顺序运行会显得繁琐. bioScript一开始就是出于简化这一步骤的目的而开发. bioScript内置的runThis, runThese, prepareThis主要用于实现这一功能. 
+
+`bioScript::runThis`包含两个主要参数, `...`与`filename_`, 其中`filename_`为需要运行的文件路径, 如果是当前正在编辑的文档往往由rstudioapi自动填充. `...`接收需要运行到的唯一标识路径, 可以为多个字符串向量, 如`bioScript::runThis('Hs', 'T')`, 或单个字符串而以`|`隔开, 如`bioScript::runThis('Hs|T')`. 唯一标识路径表示能够搜索到且仅能搜索到指定标题的标题组合, 如搜索到的标题多于一个, 如`bioScript::runThis('T')`, 则会报错. 需要注意的是`bioScript::runThis`只会运行到此标题下代码内容, 但不会运行标题下包含的下级标题的代码内容, 如`bioScript::runThis('Hs')`不会运行其下的T与Macrophage. 
+
+`bioScript::runThese`与`bioScript::runThis`类似, 但可运行标题下包含的下级标题的代码内容. `bioScript::prepareThis`会运行指定标题之前的代码内容, 即运行指定标题的头以准备好其所依赖的环境. `bioScript::prepareThis('Hs', 'T')`等价于`bioScript::runThis('Hs')`. 
+
+#### with函数簇消除状态的副作用
+
+with函数簇往往被用于暂时的改变表达式执行时的状态, 当表达式出于任何原因退出执行时, 恢复到原先的状态. with函数簇类似于函数装饰器，但更灵活，优点是：
+
+1. 无需了解原始函数的参数；
+2. 允许自由传递原始表达式; 
+
+目标bioScript中设计了以下with函数: 
+
+- `withSessions`用于开启多进程, 多进程功能基于future. 
+- `withMessgae`在表达式执行完毕后在控制台上打印内容. 
+- `withAssume`根据表达式是否执行成功输出不同的内容. 
+- `withBackground`将表达式送到后台执行. 
+- `withPath`将表达式在指定路径下执行.  
